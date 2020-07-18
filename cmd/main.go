@@ -19,7 +19,9 @@ func main() {
 
 	// Add your request filter functions here
 	pp.RequestFilters = []filters.RequestFilter{
+		customFilters.PopulateUserdata(f),
 		customFilters.WriteReq(f),
+		customFilters.DetectIDOR(f),
 	}
 
 	// Add your response filter functions here

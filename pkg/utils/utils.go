@@ -2,11 +2,19 @@ package utils
 
 import (
 	"bufio"
-	"crypto/sha1"
+	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"strings"
+	"time"
 )
+
+type SlackRequestBody struct {
+}
 
 /*
  * Creates a uniquely named file, based on the host, path and req/res body.
@@ -14,23 +22,20 @@ import (
  * This means that any request and it's resposne are named with the same hash.
  * This makes it easy to go through and read them, when opened with "vim *"
  */
-func WriteUniqueFile(host string, path string, body []byte, outputDir string, httpDump []byte, ext string) {
+func WriteUniqueFile(checksum string, body string, outputDir string, httpDump string, ext string) {
 	if outputDir != "./" {
 		os.MkdirAll(outputDir, os.ModePerm)
 	}
 
-	cacheKey := fmt.Sprintf("%s%s%s", host, path, body)
-	hashed := sha1.Sum([]byte(cacheKey))
-
-	filePath := fmt.Sprintf("%v/%x.%v", outputDir, hashed, ext)
+	filePath := fmt.Sprintf("%v/%v.%v", outputDir, checksum, ext)
 
 	if !FileExists(filePath) {
 		var constructed string
 		if ext == "req" {
-			constructed = fmt.Sprintf(`%s %s`, httpDump, body)
+			constructed = fmt.Sprintf(`%v %v`, httpDump, body)
 		}
 		if ext == "res" {
-			constructed = fmt.Sprintf(`%s`, httpDump)
+			constructed = fmt.Sprintf(`%v`, httpDump)
 		}
 
 		err := AppendToFile(constructed, filePath)
@@ -84,4 +89,49 @@ func AppendToFile(data string, filePath string) error {
 func FileExists(name string) bool {
 	_, err := os.Stat(name)
 	return !os.IsNotExist(err)
+}
+
+/*
+ * Send a slack notification via webhook
+ */
+func SendSlackNotification(webhookUrl string, msg string) error {
+	slackBody, _ := json.Marshal(struct {
+		Text string `json:"text"`
+	}{
+		Text: msg,
+	})
+
+	req, err := http.NewRequest(http.MethodPost, webhookUrl, bytes.NewBuffer(slackBody))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	if buf.String() != "ok" {
+		return errors.New("Non-ok response returned from Slack")
+	}
+	return nil
+}
+
+/*
+ * Check if a string contains any word from a list
+ */
+func ContainsAnyWord(bigString string, words []string) bool {
+	for _, w := range words {
+		if strings.Contains(bigString, w) {
+			fmt.Println(w, "EEEEEEEEEEEEEEEEEEEe")
+			return true
+		}
+	}
+
+	return false
 }

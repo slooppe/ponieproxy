@@ -9,7 +9,7 @@ import (
 type PonieProxy struct {
 	RequestFilters  []filters.RequestFilter
 	ResponseFilters []filters.ResponseFilter
-	Options         *config.Options
+	Flags           *config.Flags
 	ProxyInstance   *goproxy.ProxyHttpServer
 }
 

@@ -7,15 +7,15 @@ import (
 	"github.com/ctoyan/ponieproxy/pkg/utils"
 )
 
-type Options struct {
+type Flags struct {
 	HostPort  string
 	URL       string
 	URLFile   string
 	OutputDir string
 }
 
-func ParseFlags() *Options {
-	o := &Options{}
+func ParseFlags() *Flags {
+	o := &Flags{}
 
 	flag.StringVar(&o.HostPort, "h", ":8080", "Host and port. Default is :8080.")
 	flag.StringVar(&o.URLFile, "u", "./urls.txt", "Path to a file, which contains a list of URL regexes to filter. Requires an existing file. Default is ./urls.txt")
