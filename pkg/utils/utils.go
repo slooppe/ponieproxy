@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -123,15 +122,8 @@ func SendSlackNotification(webhookUrl string, msg string) error {
 }
 
 /*
- * Check if a string contains any word from a list
+ * Check if
  */
-func ContainsAnyWord(bigString string, words []string) bool {
-	for _, w := range words {
-		if strings.Contains(bigString, w) {
-			fmt.Println(w, "EEEEEEEEEEEEEEEEEEEe")
-			return true
-		}
-	}
-
+func CheckHuntMatch(req *http.Request, words []string) bool {
 	return false
 }

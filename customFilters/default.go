@@ -134,16 +134,20 @@ func DetectIDOR(f *config.Flags) filters.RequestFilter {
 			goproxy.UrlMatches(regexp.MustCompile(fmt.Sprintf("(%v)", strings.Join(urlsList, ")|(")))),
 		},
 		Handler: func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-			requestDump, err := httputil.DumpRequest(req, false)
-			if err != nil {
-				fmt.Printf("error on request dump: %v\n", err)
+			ud := ctx.UserData.(filters.UserData)
+			reqQueryMap := req.URL.Query()
+
+			idorParams := []string{"account", "doc", "edit", "email", "group", "id", "key", "no", "number", "order", "profile", "report", "user"}
+			for _, idorParam := range idorParams {
+				for queryParam := range reqQueryMap {
+					if strings.Contains(strings.ToLower(queryParam), strings.ToLower(idorParam)) {
+						slackMsg := fmt.Sprintf("IDOR \nQUERY PARAM: `%v` \nFILE:  `%v`", queryParam, ud.Checksum)
+						go utils.SendSlackNotification("https://hooks.slack.com/services/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", slackMsg)
+					}
+				}
 			}
 
-			containsWord := utils.ContainsAnyWord(string(requestDump), []string{"account", "doc", "edit", "email", "group", "id", "key", "no", "number", "order", "profile", "report", "user"})
-
-			if containsWord {
-				go utils.SendSlackNotification("https://hooks.slack.com/services/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", "idor found")
-			}
+			//Check in body
 
 			return req, nil
 		},
