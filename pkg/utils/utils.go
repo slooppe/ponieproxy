@@ -9,7 +9,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
+
+	"github.com/ctoyan/ponieproxy/internal/filters"
 )
 
 type SlackRequestBody struct {
@@ -122,8 +125,42 @@ func SendSlackNotification(webhookUrl string, msg string) error {
 }
 
 /*
- * Check if
+ * Searches for a string in the JSON request body
+ * Sends a slack notification
  */
-func CheckHuntMatch(req *http.Request, words []string) bool {
-	return false
+func DetectInJsonReqBody(huntType string, jsonParam string, ud filters.UserData) error {
+	if ud.ReqBody == "" {
+		return nil
+	}
+
+	bodyMap := map[string]interface{}{}
+	err := json.Unmarshal([]byte(ud.ReqBody), &bodyMap)
+	if err != nil {
+		return err
+	}
+
+	for bodyParam := range bodyMap {
+		if strings.Contains(strings.ToLower(bodyParam), strings.ToLower(jsonParam)) {
+			slackMsg := fmt.Sprintf("%v \nREQUEST BODY PARAM: `%v` \nFILE:  `%v`", huntType, bodyParam, ud.Checksum)
+			fmt.Println(slackMsg)
+			// go utils.SendSlackNotification("https://hooks.slack.com/services/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", slackMsg)
+		}
+	}
+
+	return nil
+}
+
+/*
+ * Searches for a string in request query param
+ * Sends a slack notification
+ */
+func DetectInReqQueryParam(huntType string, req *http.Request, jsonParam string, ud filters.UserData) {
+	reqQueryMap := req.URL.Query()
+	for queryParam := range reqQueryMap {
+		if strings.Contains(strings.ToLower(queryParam), strings.ToLower(jsonParam)) {
+			slackMsg := fmt.Sprintf("%v \nQUERY PARAM: `%v` \nFILE:  `%v`", huntType, queryParam, ud.Checksum)
+			fmt.Println(slackMsg)
+			// go utils.SendSlackNotification("https://hooks.slack.com/services/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", slackMsg)
+		}
+	}
 }

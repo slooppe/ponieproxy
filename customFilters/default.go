@@ -135,19 +135,15 @@ func DetectIDOR(f *config.Flags) filters.RequestFilter {
 		},
 		Handler: func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 			ud := ctx.UserData.(filters.UserData)
-			reqQueryMap := req.URL.Query()
 
 			idorParams := []string{"account", "doc", "edit", "email", "group", "id", "key", "no", "number", "order", "profile", "report", "user"}
-			for _, idorParam := range idorParams {
-				for queryParam := range reqQueryMap {
-					if strings.Contains(strings.ToLower(queryParam), strings.ToLower(idorParam)) {
-						slackMsg := fmt.Sprintf("IDOR \nQUERY PARAM: `%v` \nFILE:  `%v`", queryParam, ud.Checksum)
-						go utils.SendSlackNotification("https://hooks.slack.com/services/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", slackMsg)
-					}
-				}
-			}
 
-			//Check in body
+			for _, idorParam := range idorParams {
+				utils.DetectInReqQueryParam("IDOR", req, idorParam, ud)
+				utils.DetectInJsonReqBody("IDOR", idorParam, ud)
+				// handle non json requests (other mime types)
+				// maybe search with string.contains all others?
+			}
 
 			return req, nil
 		},
